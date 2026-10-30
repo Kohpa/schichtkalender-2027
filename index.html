@@ -414,11 +414,24 @@ $("signIn").onclick=async()=>{
     $("authStatus").textContent="Supabase ist nicht richtig konfiguriert.";
     return;
   }
+
+  const login=$("email").value.trim().toLowerCase();
+  const password=$("password").value;
+
+  const email = {
+    "kohpa": "kohpa@login.schichtkalender.invalid",
+    "bruma": "bruma@login.schichtkalender.invalid"
+  }[login] || login;
+
   const {error}=await db.auth.signInWithPassword({
-    email:$("email").value,
-    password:$("password").value
+    email,
+    password
   });
-  $("authStatus").textContent=error?error.message:"Anmeldung erfolgreich.";
+
+  $("authStatus").textContent=error
+    ? "Anmeldung fehlgeschlagen: Benutzername oder Passwort prüfen."
+    : "Anmeldung erfolgreich.";
+
   await updateAuth();
   await loadData();
 };
