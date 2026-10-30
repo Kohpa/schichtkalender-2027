@@ -4,38 +4,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Schichtkalender 2027</title>
+<title>Schichtkalender 2027–2095</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{font-family:system-ui,sans-serif;color:#202938;background:#f4f6fa}
 body{max-width:950px;margin:auto;padding:14px}
-h1{font-size:1.65rem}.panel{background:white;padding:15px;border-radius:14px;margin:12px 0;box-shadow:0 2px 9px #0001}
-button,input,textarea{font:inherit;padding:9px;border:1px solid #cbd2dc;border-radius:7px}
+h1{font-size:1.65rem}
+.panel{background:white;padding:15px;border-radius:14px;margin:12px 0;box-shadow:0 2px 9px #0001}
+button,input,textarea,select{font:inherit;padding:9px;border:1px solid #cbd2dc;border-radius:7px}
 button{cursor:pointer;background:#eef2f7;margin:3px}
 .primary{background:#263e70;color:white}
 input,textarea{box-sizing:border-box;max-width:100%;width:100%;margin:5px 0}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
-.day{min-height:76px;padding:4px 2px;border:1px solid #e0e4eb;border-radius:7px;background:white;overflow-wrap:anywhere;font-size:.82rem}
-.day b{display:block;font-size:1rem}.day small{display:block;font-size:.68rem}
-.N{background:#dce6ff}.M{background:#ffead7}.F{background:#d9f4e5}
-.weekend{background:#e9edf1;color:#687386}.holiday{border:2px solid #c14a4a}
+.day{min-width:0;min-height:76px;padding:4px 2px;border:1px solid #e0e4eb;border-radius:7px;background:white;overflow-wrap:anywhere;font-size:.82rem}
+.day b{display:block;font-size:1rem}
+.day small{display:block;font-size:.68rem}
+.N{background:#dce6ff}
+.M{background:#ffead7}
+.F{background:#d9f4e5}
+.weekend{background:#e9edf1;color:#687386}
+.holiday{border:2px solid #c14a4a}
 .selected{outline:3px solid #576fbc}
-.muted{color:#657184;font-size:.9rem}.danger{color:#a52b2b}
-@media(max-width:450px){body{padding:6px}.day{min-height:68px;font-size:.72rem}.panel{padding:10px}}
-  
-.shared-info {
-  background-color: #ffdddd;
-  color: #000000;
-  border-left: 4px solid #c62828;
-  padding: 8px;
-  border-radius: 4px;
+.muted{color:#657184;font-size:.9rem}
+.danger{color:#a52b2b}
+.shared-info{display:block;background:#ffdddd;color:#000;border-left:4px solid #c62828;padding:5px;margin-top:4px;border-radius:4px;white-space:normal}
+#dayInfo .shared-info{padding:10px;margin:8px 0}
+@media(max-width:450px){
+ body{padding:6px}
+ .day{min-height:68px;font-size:.72rem}
+ .day small{font-size:.62rem}
+ .panel{padding:10px}
 }
-
 </style>
 </head>
 <body>
-<h1>📅 Schichtkalender 2027</h1>
+<h1>📅 Schichtkalender 2027–2095</h1>
 <p class="muted">N = Nacht · M = Spät · F = Früh · Montag bis Freitag</p>
 
 <div class="panel">
@@ -60,7 +64,7 @@ input,textarea{box-sizing:border-box;max-width:100%;width:100%;margin:5px 0}
   <div id="admin" hidden>
     <label for="shift">Schicht für diesen Tag</label>
     <select id="shift">
-      <option value="">Keine Schicht</option>
+      <option value="">Automatischen Plan verwenden</option>
       <option value="N">N – Nachtschicht</option>
       <option value="M">M – Spätschicht</option>
       <option value="F">F – Frühschicht</option>
@@ -74,7 +78,7 @@ input,textarea{box-sizing:border-box;max-width:100%;width:100%;margin:5px 0}
 
 <div class="panel">
   <h3>Administrator-Anmeldung</h3>
-  <p class="muted">Mitarbeiter können den Kalender ohne Anmeldung ansehen. Nur dein angemeldetes Konto darf Änderungen speichern.</p>
+  <p class="muted">Mitarbeiter können den Kalender ohne Anmeldung ansehen. Änderungen sind durch die Supabase-Datenbankregeln geschützt.</p>
   <div id="login">
     <input id="email" type="email" placeholder="Deine E-Mail-Adresse" autocomplete="username">
     <input id="password" type="password" placeholder="Passwort" autocomplete="current-password">
@@ -89,148 +93,349 @@ input,textarea{box-sizing:border-box;max-width:100%;width:100%;margin:5px 0}
 
 <script>
 const SUPABASE_URL = "https://uvskcvpghxxzgcqjmkmt.supabase.co";
-const SUPABASE_KEY ="sb_publishable_9ITj_ZcBVgB8UinKXrej0g_S8BROev4";
+const SUPABASE_KEY = "sb_publishable_9ITj_ZcBVgB8UinKXrej0g_S8BROev4";
 
-const HOLIDAYS = {
- "2027-01-01":"Neujahr",
- "2027-01-06":"Heilige Drei Könige",
- "2027-03-26":"Karfreitag",
- "2027-03-29":"Ostermontag",
- "2027-05-01":"Tag der Arbeit",
- "2027-05-06":"Christi Himmelfahrt",
- "2027-05-17":"Pfingstmontag",
- "2027-05-27":"Fronleichnam",
- "2027-10-03":"Tag der Deutschen Einheit",
- "2027-11-01":"Allerheiligen",
- "2027-12-25":"1. Weihnachtstag",
- "2027-12-26":"2. Weihnachtstag"
-};
-const MONTHS=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const FIRST_YEAR = 2027;
+const LAST_YEAR = 2095;
+const START_DATE = "2027-01-04";
+const MONTHS = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+
 const clientReady = SUPABASE_URL.startsWith("https://") &&
- !SUPABASE_URL.includes("HIER_") && !SUPABASE_KEY.includes("HIER_");
+  !SUPABASE_URL.includes("HIER_") &&
+  SUPABASE_KEY.startsWith("sb_publishable_");
+
 const db = clientReady ? supabase.createClient(SUPABASE_URL,SUPABASE_KEY) : null;
-let month = 0, selected = null, user = null;
-let shifts = {}, infos = {};
+
+let year = FIRST_YEAR;
+let month = 0;
+let selected = null;
+let user = null;
+let shifts = {};
+let infos = {};
+
 const $ = id => document.getElementById(id);
 const keyDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const dateFrom = s => new Date(s+"T12:00:00");
 const weekday = d => (d.getDay()+6)%7;
 const isWeekend = d => d.getDay()===0 || d.getDay()===6;
+const infoOf = s => infos[s]?.info || "";
+const pretty = s => dateFrom(s).toLocaleDateString("de-DE",{day:"2-digit",month:"long",year:"numeric"});
 
-function automaticShift(s){
- const d=dateFrom(s), start=dateFrom("2027-01-04");
- if(d<start || isWeekend(d)) return "";
- let days=0;
- for(let x=new Date(start);x<d;x.setDate(x.getDate()+1)){
-   if(!isWeekend(x)) days++;
- }
- return ["N","M","F"][Math.floor(days/5)%3];
+/* Berechnet Ostersonntag nach dem gregorianischen Kalender. */
+function easterSunday(y){
+  const a=y%19, b=Math.floor(y/100), c=y%100;
+  const d=Math.floor(b/4), e=b%4;
+  const f=Math.floor((b+8)/25);
+  const g=Math.floor((b-f+1)/3);
+  const h=(19*a+b-d-g+15)%30;
+  const i=Math.floor(c/4), k=c%4;
+  const l=(32+2*e+2*i-h-k)%7;
+  const m=Math.floor((a+11*h+22*l)/451);
+  const month=Math.floor((h+l-7*m+114)/31);
+  const day=((h+l-7*m+114)%31)+1;
+  return new Date(y,month-1,day,12);
 }
-function shiftOf(s){return Object.hasOwn(shifts,s)?(shifts[s].schicht||""):automaticShift(s)}
-function infoOf(s){return infos[s]?.info || ""}
-function pretty(s){return dateFrom(s).toLocaleDateString("de-DE",{day:"2-digit",month:"long",year:"numeric"})}
+
+function addDays(d,n){
+  const result=new Date(d);
+  result.setDate(result.getDate()+n);
+  return result;
+}
+
+function holidaysForYear(y){
+  const easter=easterSunday(y);
+  const entries=[
+    [`${y}-01-01`,"Neujahr"],
+    [`${y}-01-06`,"Heilige Drei Könige"],
+    [keyDate(addDays(easter,-2)),"Karfreitag"],
+    [keyDate(addDays(easter,1)),"Ostermontag"],
+    [`${y}-05-01`,"Tag der Arbeit"],
+    [keyDate(addDays(easter,39)),"Christi Himmelfahrt"],
+    [keyDate(addDays(easter,50)),"Pfingstmontag"],
+    [keyDate(addDays(easter,60)),"Fronleichnam"],
+    [`${y}-10-03`,"Tag der Deutschen Einheit"],
+    [`${y}-11-01`,"Allerheiligen"],
+    [`${y}-12-25`,"1. Weihnachtstag"],
+    [`${y}-12-26`,"2. Weihnachtstag"]
+  ];
+  return Object.fromEntries(entries);
+}
+
+function holidayOf(s){
+  return holidaysForYear(Number(s.slice(0,4)))[s] || "";
+}
+
+/* Die Schichtfolge zählt nur Montag bis Freitag.
+   04.01.2027 = N; danach jeweils fünf Arbeitstage pro Schicht. */
+function automaticShift(s){
+  const d=dateFrom(s);
+  const start=dateFrom(START_DATE);
+  if(d<start || isWeekend(d)) return "";
+
+  let workdays=0;
+  for(let x=new Date(start);x<d;x.setDate(x.getDate()+1)){
+    if(!isWeekend(x)) workdays++;
+  }
+  return ["N","M","F"][Math.floor(workdays/5)%3];
+}
+
+function shiftOf(s){
+  if(Object.hasOwn(shifts,s)){
+    return shifts[s].schicht || "";
+  }
+  return automaticShift(s);
+}
 
 async function loadData(){
- if(!db){$("status").textContent="Bitte zuerst Project URL und Publishable Key im Code eintragen.";return}
- try{
-   const a=await db.from("schicht_eintraege").select("datum,schicht");
-   if(a.error) throw a.error;
-   shifts={}; (a.data||[]).forEach(r=>shifts[r.datum]=r);
-   const b=await db.from("schicht_infos").select("datum,info");
-   if(b.error) throw b.error;
-   infos={}; (b.data||[]).forEach(r=>infos[r.datum]=r);
-   $("status").textContent="Schichten und gemeinsame Infos geladen.";
- }catch(e){$("status").textContent="Laden fehlgeschlagen: "+e.message}
- render();
+  if(!db){
+    $("status").textContent="Supabase ist nicht richtig konfiguriert.";
+    return;
+  }
+  try{
+    const a=await db.from("schicht_eintraege").select("datum,schicht");
+    if(a.error) throw a.error;
+    shifts={};
+    (a.data||[]).forEach(r=>shifts[r.datum]=r);
+
+    const b=await db.from("schicht_infos").select("datum,info");
+    if(b.error) throw b.error;
+    infos={};
+    (b.data||[]).forEach(r=>infos[r.datum]=r);
+
+    $("status").textContent="Schichten und gemeinsame Infos geladen.";
+  }catch(e){
+    $("status").textContent="Laden fehlgeschlagen: "+e.message;
+  }
+  render();
 }
+
 function render(){
- $("monthTitle").textContent=MONTHS[month]+" 2027";
- const first=new Date(2027,month,1), last=new Date(2027,month+1,0);
- const cal=$("calendar"); cal.replaceChildren();
- ["Mo","Di","Mi","Do","Fr","Sa","So"].forEach(t=>{
-   const e=document.createElement("div");e.textContent=t;e.className="muted";cal.append(e);
- });
- for(let i=0;i<weekday(first);i++) cal.append(document.createElement("div"));
- for(let n=1;n<=last.getDate();n++){
-   const d=new Date(2027,month,n), s=keyDate(d), sh=shiftOf(s);
-   const e=document.createElement("button");
-   e.className="day "+(isWeekend(d)?"weekend":sh);
-   if(HOLIDAYS[s]) e.classList.add("holiday");
-   if(selected===s)e.classList.add("selected");
-   const num=document.createElement("b");num.textContent=n;e.append(num);
-   const label=document.createElement("small");
-   label.textContent=isWeekend(d)?"Wochenende":(sh||"—");e.append(label);
-   if(HOLIDAYS[s]){const h=document.createElement("small");h.textContent=HOLIDAYS[s];e.append(h)}
-   if(infoOf(s)){const inf=document.createElement("small");inf.textContent="ℹ "+infoOf(s);e.append(inf)}
-   e.addEventListener("click",()=>selectDay(s));cal.append(e);
- }
- let c={N:0,M:0,F:0};
- for(let n=1;n<=last.getDate();n++){const s=keyDate(new Date(2027,month,n));if(c[shiftOf(s)]!==undefined)c[shiftOf(s)]++}
- $("counts").textContent=`N: ${c.N} · M: ${c.M} · F: ${c.F} Arbeitstage`;
+  $("monthTitle").textContent=MONTHS[month]+" "+year;
+  const first=new Date(year,month,1);
+  const last=new Date(year,month+1,0);
+  const cal=$("calendar");
+  cal.replaceChildren();
+
+  ["Mo","Di","Mi","Do","Fr","Sa","So"].forEach(t=>{
+    const e=document.createElement("div");
+    e.textContent=t;
+    e.className="muted";
+    cal.append(e);
+  });
+
+  for(let i=0;i<weekday(first);i++){
+    cal.append(document.createElement("div"));
+  }
+
+  for(let n=1;n<=last.getDate();n++){
+    const d=new Date(year,month,n);
+    const s=keyDate(d);
+    const sh=shiftOf(s);
+    const holiday=holidayOf(s);
+    const info=infoOf(s);
+    const e=document.createElement("button");
+
+    e.className="day "+(isWeekend(d)?"weekend":sh);
+    if(holiday)e.classList.add("holiday");
+    if(selected===s)e.classList.add("selected");
+
+    const num=document.createElement("b");
+    num.textContent=n;
+    e.append(num);
+
+    const label=document.createElement("small");
+    label.textContent=isWeekend(d)?"Wochenende":(sh||"—");
+    e.append(label);
+
+    if(holiday){
+      const h=document.createElement("small");
+      h.textContent=holiday;
+      e.append(h);
+    }
+
+    if(info){
+      const inf=document.createElement("small");
+      inf.className="shared-info";
+      inf.textContent="ℹ "+info;
+      e.append(inf);
+    }
+
+    e.addEventListener("click",()=>selectDay(s));
+    cal.append(e);
+  }
+
+  const c={N:0,M:0,F:0};
+  for(let n=1;n<=last.getDate();n++){
+    const s=keyDate(new Date(year,month,n));
+    const sh=shiftOf(s);
+    if(c[sh]!==undefined)c[sh]++;
+  }
+  $("counts").textContent=`N: ${c.N} · M: ${c.M} · F: ${c.F} Arbeitstage`;
 }
+
 function selectDay(s){
- selected=s;const d=dateFrom(s),sh=shiftOf(s);
- $("selectedTitle").textContent=pretty(s);
- $("dayInfo").textContent=[isWeekend(d)?"Wochenende":`Schicht: ${sh||"keine"}`,HOLIDAYS[s]||"",infoOf(s)].filter(Boolean).join(" · ")||"Keine Zusatzinfo";
- $("admin").hidden=!user;
- $("shift").value=sh;
- $("info").value=infoOf(s);
- render();
+  selected=s;
+  const d=dateFrom(s);
+  const sh=shiftOf(s);
+  const info=infoOf(s);
+  const dayInfo=$("dayInfo");
+  dayInfo.replaceChildren();
+
+  const details=[
+    isWeekend(d)?"Wochenende":`Schicht: ${sh||"keine"}`,
+    holidayOf(s)
+  ].filter(Boolean).join(" · ");
+
+  const summary=document.createElement("div");
+  summary.textContent=details||"Keine Zusatzinfo";
+  dayInfo.append(summary);
+
+  if(info){
+    const shared=document.createElement("div");
+    shared.className="shared-info";
+    shared.textContent="Gemeinsame Schichtinfo: "+info;
+    dayInfo.append(shared);
+  }
+
+  $("selectedTitle").textContent=pretty(s);
+  $("admin").hidden=!user;
+
+  // Leer bedeutet: automatischen Schichtplan verwenden.
+  $("shift").value=Object.hasOwn(shifts,s)?(shifts[s].schicht||""):"";
+  $("info").value=info;
+  render();
 }
+
 async function save(){
- if(!user||!selected)return;
- const sh=$("shift").value, info=$("info").value.trim();
- try{
-  const result=await db.from("schicht_eintraege").upsert({datum:selected,schicht:sh||null},{onConflict:"datum"});
-  if(result.error)throw result.error;
-  const infResult=info
-   ? await db.from("schicht_infos").upsert({datum:selected,info},{onConflict:"datum"})
-   : await db.from("schicht_infos").delete().eq("datum",selected);
-  if(infResult.error)throw infResult.error;
-  $("status").textContent="Änderungen gespeichert.";
-  await loadData();selectDay(selected);
- }catch(e){$("status").textContent="Speichern fehlgeschlagen: "+e.message}
+  if(!user||!selected)return;
+  const sh=$("shift").value;
+  const info=$("info").value.trim();
+
+  try{
+    let result;
+    if(sh){
+      result=await db.from("schicht_eintraege")
+        .upsert({datum:selected,schicht:sh},{onConflict:"datum"});
+    }else{
+      result=await db.from("schicht_eintraege")
+        .delete().eq("datum",selected);
+    }
+    if(result.error)throw result.error;
+
+    const infResult=info
+      ? await db.from("schicht_infos").upsert({datum:selected,info},{onConflict:"datum"})
+      : await db.from("schicht_infos").delete().eq("datum",selected);
+
+    if(infResult.error)throw infResult.error;
+
+    $("status").textContent="Änderungen gespeichert.";
+    await loadData();
+    selectDay(selected);
+  }catch(e){
+    $("status").textContent="Speichern fehlgeschlagen: "+e.message;
+  }
 }
+
 async function resetDay(){
- if(!user||!selected)return;
- try{
-  const a=await db.from("schicht_eintraege").delete().eq("datum",selected);
-  if(a.error)throw a.error;
-  const b=await db.from("schicht_infos").delete().eq("datum",selected);
-  if(b.error)throw b.error;
-  await loadData();selectDay(selected);
- }catch(e){$("status").textContent="Zurücksetzen fehlgeschlagen: "+e.message}
+  if(!user||!selected)return;
+  try{
+    const a=await db.from("schicht_eintraege").delete().eq("datum",selected);
+    if(a.error)throw a.error;
+    const b=await db.from("schicht_infos").delete().eq("datum",selected);
+    if(b.error)throw b.error;
+    await loadData();
+    selectDay(selected);
+  }catch(e){
+    $("status").textContent="Zurücksetzen fehlgeschlagen: "+e.message;
+  }
 }
+
 function exportCSV(){
- const last=new Date(2027,month+1,0), rows=[["Datum","Wochentag","Schicht","Feiertag","Schichtinfo"]];
- for(let n=1;n<=last.getDate();n++){
-  const d=new Date(2027,month,n),s=keyDate(d);
-  rows.push([s,d.toLocaleDateString("de-DE",{weekday:"long"}),isWeekend(d)?"":shiftOf(s),HOLIDAYS[s]||"",infoOf(s)]);
- }
- const csv="\uFEFF"+rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(";")).join("\r\n");
- const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
- const a=document.createElement("a");a.href=url;a.download=`Schichtkalender-2027-${String(month+1).padStart(2,"0")}.csv`;a.click();URL.revokeObjectURL(url);
+  const last=new Date(year,month+1,0);
+  const rows=[["Datum","Wochentag","Schicht","Feiertag","Schichtinfo"]];
+
+  for(let n=1;n<=last.getDate();n++){
+    const d=new Date(year,month,n);
+    const s=keyDate(d);
+    rows.push([
+      s,
+      d.toLocaleDateString("de-DE",{weekday:"long"}),
+      isWeekend(d)?"":shiftOf(s),
+      holidayOf(s),
+      infoOf(s)
+    ]);
+  }
+
+  const csv="\uFEFF"+rows.map(r=>
+    r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(";")
+  ).join("\r\n");
+
+  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=`Schichtkalender-${year}-${String(month+1).padStart(2,"0")}.csv`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+
 async function updateAuth(){
- if(!db)return;
- const r=await db.auth.getSession();user=r.data.session?.user||null;
- $("login").hidden=!!user;$("loggedIn").hidden=!user;
- if(selected)selectDay(selected);else $("admin").hidden=!user;
+  if(!db)return;
+  const r=await db.auth.getSession();
+  user=r.data.session?.user||null;
+  $("login").hidden=!!user;
+  $("loggedIn").hidden=!user;
+  if(selected)selectDay(selected);
+  else $("admin").hidden=!user;
 }
-$("prev").onclick=()=>{month=(month+11)%12;selected=null;render()};
-$("next").onclick=()=>{month=(month+1)%12;selected=null;render()};
-$("csv").onclick=exportCSV;$("save").onclick=save;$("reset").onclick=resetDay;
+
+function moveMonth(delta){
+  const next=new Date(year,month+delta,1);
+  if(next.getFullYear()<FIRST_YEAR || next.getFullYear()>LAST_YEAR){
+    $("status").textContent=`Der Kalender reicht von ${FIRST_YEAR} bis ${LAST_YEAR}.`;
+    return;
+  }
+  year=next.getFullYear();
+  month=next.getMonth();
+  selected=null;
+  $("selectedTitle").textContent="Tag auswählen";
+  $("dayInfo").textContent="Tippe auf einen Kalendertag, um Details zu sehen.";
+  $("admin").hidden=true;
+  render();
+}
+
+$("prev").onclick=()=>moveMonth(-1);
+$("next").onclick=()=>moveMonth(1);
+$("csv").onclick=exportCSV;
+$("save").onclick=save;
+$("reset").onclick=resetDay;
+
 $("signIn").onclick=async()=>{
- if(!db){$("authStatus").textContent="Bitte zuerst die Supabase-Daten eintragen.";return}
- const {error}=await db.auth.signInWithPassword({email:$("email").value,password:$("password").value});
- $("authStatus").textContent=error?error.message:"Anmeldung erfolgreich.";
- await updateAuth();await loadData();
+  if(!db){
+    $("authStatus").textContent="Supabase ist nicht richtig konfiguriert.";
+    return;
+  }
+  const {error}=await db.auth.signInWithPassword({
+    email:$("email").value,
+    password:$("password").value
+  });
+  $("authStatus").textContent=error?error.message:"Anmeldung erfolgreich.";
+  await updateAuth();
+  await loadData();
 };
-$("signOut").onclick=async()=>{await db.auth.signOut();user=null;await updateAuth();render()};
+
+$("signOut").onclick=async()=>{
+  if(db)await db.auth.signOut();
+  user=null;
+  await updateAuth();
+  render();
+};
+
+render();
 if(db){
- db.auth.onAuthStateChange(()=>updateAuth());
- updateAuth();loadData();
-}else render();
+  db.auth.onAuthStateChange(()=>{updateAuth()});
+  updateAuth();
+  loadData();
+}
 </script>
 </body>
 </html>
