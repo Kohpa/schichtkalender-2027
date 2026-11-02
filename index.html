@@ -407,6 +407,26 @@ function moveMonth(delta){
 
 $("prev").onclick=()=>moveMonth(-1);
 $("next").onclick=()=>moveMonth(1);
+ let touchStartX = 0;
+let touchStartY = 0;
+
+$("calendar").addEventListener("touchstart", e => {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}, { passive: true });
+
+$("calendar").addEventListener("touchend", e => {
+  const diffX = e.changedTouches[0].screenX - touchStartX;
+  const diffY = e.changedTouches[0].screenY - touchStartY;
+
+  if (Math.abs(diffX) > 70 && Math.abs(diffX) > Math.abs(diffY) * 1.3) {
+    if (diffX < 0) {
+      moveMonth(1);
+    } else {
+      moveMonth(-1);
+    }
+  }
+}, { passive: true });
 $("csv").onclick=exportCSV;
 $("save").onclick=save;
 $("reset").onclick=resetDay;
