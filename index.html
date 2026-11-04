@@ -43,7 +43,13 @@ input,textarea{box-sizing:border-box;max-width:100%;width:100%;margin:5px 0}
 <body>
 <h1>📅 Schichtkalender Schicht Kohpa</h1>
 <p class="muted">N = Nacht · M = Spät · F = Früh · Montag bis Freitag</p>
-
+<div class="panel">
+  <h3>Push-Benachrichtigungen</h3>
+  <p class="muted">Erhalte eine Nachricht, wenn der Schichtkalender geändert wird.</p>
+  <button class="primary" id="enablePush">Benachrichtigungen aktivieren</button>
+  <p id="pushStatus" class="muted"></p>
+</div>
+ 
 <div class="panel">
   <div class="top">
     <button id="prev">◀ Zurück</button>
@@ -108,6 +114,68 @@ const clientReady = SUPABASE_URL.startsWith("https://") &&
 
 const db = clientReady ? supabase.createClient(SUPABASE_URL,SUPABASE_KEY) : null;
 
+ const VAPID_PUBLIC_KEY = "BFbvrhanVDyWOqhoRqytzpgIQG6VMR0zFtlyxShRo5xPaFZwuyoDJmx3vzYmV8QqtpMx0go6sUVhSAW8dzuJwM0";
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from(rawData, char => char.charCodeAt(0));
+}
+ async function enablePush() {
+  const status = $("pushStatus");
+
+  try {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      throw new Error("Push-Nachrichten werden auf diesem Gerät nicht unterstützt.");
+    }
+
+    status.textContent = "Bitte Benachrichtigungen erlauben …";
+
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      throw new Error("Benachrichtigungen wurden nicht erlaubt.");
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+
+    const response = await fetch(
+      SUPABASE_URL + "/functions/v1/push-notify",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_KEY
+        },
+        body: JSON.stringify({
+          action: "subscribe",
+          subscription: subscription.toJSON()
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Anmeldung fehlgeschlagen.");
+    }
+
+    status.textContent = "Push-Benachrichtigungen sind aktiviert!";
+  } catch (error) {
+    status.textContent = "Fehler: " + error.message;
+  }
+ }
 let year = FIRST_YEAR;
 let month = 0;
 let selected = null;
@@ -406,7 +474,8 @@ function moveMonth(delta){
 }
 
 $("prev").onclick=()=>moveMonth(-1);
-
+$("enablePush").onclick=enablePush;
+ 
 $("next").onclick=()=>moveMonth(1);
  let touchStartX = 0;
 let touchStartY = 0;
