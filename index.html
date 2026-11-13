@@ -538,9 +538,64 @@ $("signOut").onclick=async()=>{
 render();
 if(db){
   db.auth.onAuthStateChange(()=>{updateAuth()});
-  updateAuth();
+   updateAuth();
   loadData();
 }
+ // Privater Kalender – Speicherung nur auf diesem Gerät
+function privateTermineLaden() {
+  return JSON.parse(localStorage.getItem("meine_private_termine") || "[]");
+}
+
+function privateTermineAnzeigen() {
+  const liste = document.getElementById("privatTerminListe");
+  if (!liste) return;
+
+  const termine = privateTermineLaden();
+  liste.innerHTML = "";
+
+  termine.forEach((termin, index) => {
+    const eintrag = document.createElement("div");
+    eintrag.className = "panel";
+    eintrag.textContent =
+      termin.datum + " – " + termin.titel +
+      (termin.notiz ? " – " + termin.notiz : "");
+
+    const loeschen = document.createElement("button");
+    loeschen.textContent = "Löschen";
+    loeschen.onclick = () => {
+      const aktuell = privateTermineLaden();
+      aktuell.splice(index, 1);
+      localStorage.setItem("meine_private_termine", JSON.stringify(aktuell));
+      privateTermineAnzeigen();
+    };
+
+    eintrag.appendChild(loeschen);
+    liste.appendChild(eintrag);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("privatSpeichern").addEventListener("click", () => {
+  const datum = document.getElementById("privatDatum").value;
+  const titel = document.getElementById("privatTitel").value.trim();
+  const notiz = document.getElementById("privatNotiz").value.trim();
+
+  if (!datum || !titel) {
+    alert("Bitte Datum und Titel eingeben.");
+    return;
+  }
+
+  const termine = privateTermineLaden();
+  termine.push({ datum, titel, notiz });
+  localStorage.setItem("meine_private_termine", JSON.stringify(termine));
+
+  document.getElementById("privatTitel").value = "";
+  document.getElementById("privatNotiz").value = "";
+    privateTermineAnzeigen();
+  });
+});
+
+</script>
 </script>
  <script>
 if ("serviceWorker" in navigator) {
@@ -578,5 +633,21 @@ async function kalenderBesuchSpeichern() {
 
 kalenderBesuchSpeichern();
  </script>
+ <div class="panel" id="meinPrivatKalender">
+  <h3>Mein privater Kalender 🔒</h3>
+  <p class="muted">Nur auf diesem Handy sichtbar.</p>
+
+  <input type="date" id="privatDatum">
+  <input type="text" id="privatTitel"
+         placeholder="Was möchtest du eintragen?">
+  <textarea id="privatNotiz"
+            placeholder="Notiz (optional)"></textarea>
+
+  <button class="primary" id="privatSpeichern">
+    Speichern
+  </button>
+
+  <div id="privatTerminListe"></div>
+ </div>
 </body>
 </html>
