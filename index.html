@@ -297,6 +297,8 @@ function render(){
     cal.append(document.createElement("div"));
   }
 
+   const privateTermine = privateTermineLaden();
+ 
   for(let n=1;n<=last.getDate();n++){
     const d=new Date(year,month,n);
     const s=keyDate(d);
