@@ -316,6 +316,14 @@ function render(){
     const label=document.createElement("small");
     label.textContent=isWeekend(d)?"Wochenende":(sh||"—");
     e.append(label);
+       privateTermine
+      .filter(t => t.datum === s)
+      .forEach(t => {
+        const privat = document.createElement("small");
+        privat.textContent = "🔒 " + t.titel;
+        privat.style.display = "block";
+        e.append(privat);
+      });
 
     if(holiday){
       const h=document.createElement("small");
@@ -424,6 +432,7 @@ function exportCSV(){
   const last=new Date(year,month+1,0);
   const rows=[["Datum","Wochentag","Schicht","Feiertag","Schichtinfo"]];
 
+   const privateTermine = privateTermineLaden();
   for(let n=1;n<=last.getDate();n++){
     const d=new Date(year,month,n);
     const s=keyDate(d);
